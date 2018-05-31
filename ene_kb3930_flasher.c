@@ -52,6 +52,8 @@
 #define   ENE_XBI_SPI_CFG_BUSY		(1 << 1)
 #define   ENE_XBI_SPI_CFG_WRITE_EN	(1 << 3)
 
+#define ENE_EC_HARDWARE_VERSION		(0xFF00)
+#define ENE_EC_FIRMWARE_VERSION		(0xFF01)
 #define ENE_EC8051_PXCFG		(0xFF14)
 #define   ENE_EC8051_PXCFG_RESET	(1 << 0)
 
@@ -61,6 +63,7 @@
 #define SPI_CMD_WRITE_ENABLE		0x06
 #define SPI_CMD_SECTOR_ERASE		0x20
 
+#define ENE_KB3930_HARDWARE_VERSION	0xA1
 #define SPI_FLASH_SIZE			0x10000
 #define SPI_FLASH_SECTOR_SIZE		0x1000
 #define SPI_FLASH_NUM_SECTORS		(SPI_FLASH_SIZE / SPI_FLASH_SECTOR_SIZE)
@@ -192,6 +195,27 @@ int main(int argc, char *argv[])
     printf("You need to be root.\n");
     exit(1);
   }
+  if (ec_idx_read (ENE_EC_HARDWARE_VERSION) != ENE_KB3930_HARDWARE_VERSION) {
+    if (ec_idx_read (ENE_EC_HARDWARE_VERSION) == 0xFF) {
+      printf ("Your EC does not seem to be accessible via it's IDX LPC port.\n"
+          "If you are running this program on a Purism Librem machine, this "
+          "might indicate that you do not have the latest coreboot version.\n"
+          "It is recommended that you update your coreboot installation first "
+          "then run this program again.\n"
+          "Alternatively, you could try running this command as root :\n"
+          "   setpci -s 00:1f.0 0x84.l=00000381\n"
+          "Then run this program again to see if it worked.\n");
+    } else {
+      printf ("This program is only meant to work and has only been tested with "
+          "the KB3930 EC chip.\n"
+          "Your EC does not seem to be a KB3930 and you may brick your machine "
+          "if you continue.\n"
+          "Make sure you are running this script on a Purism Librem "
+          "machine only.\n");
+    }
+    exit(1);
+  }
+
   if (write == 0) {
     FILE *f = fopen (filename, "wb");
 
