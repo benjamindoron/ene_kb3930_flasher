@@ -1,3 +1,6 @@
+/* Adapted from https://github.com/kakaroto/ene_kb3930_flasher
+ * by benjamindoron for ENE KB9028/KB9038, using ENE KB9012 datasheet
+ */
 /*
  *
  * Copyright (C) 2018 Youness Alaoui
@@ -37,7 +40,7 @@
 
 #endif
 
-#define ENE_LPC_INDEX_BASE		0x380
+#define ENE_LPC_INDEX_BASE		0x1200	// TODO: Use getopt
 #define ENE_LPC_INDEX_HIGH_ADDR		(ENE_LPC_INDEX_BASE + 1)
 #define ENE_LPC_INDEX_LOW_ADDR		(ENE_LPC_INDEX_BASE + 2)
 #define ENE_LPC_INDEX_DATA		(ENE_LPC_INDEX_BASE + 3)
@@ -48,7 +51,7 @@
 #define ENE_XBI_SPI_DATA		(0xFEAB)
 #define ENE_XBI_SPI_CMD			(0xFEAC)
 #define ENE_XBI_SPI_CFG			(0xFEAD)
-#define   ENE_XBI_SPI_CFG_BUSY_EN	(1 << 0)
+#define   ENE_XBI_SPI_CFG_BUSY_EN	(1 << 0)	// TODO: Caution, reserved on KB9012
 #define   ENE_XBI_SPI_CFG_BUSY		(1 << 1)
 #define   ENE_XBI_SPI_CFG_WRITE_EN	(1 << 3)
 
@@ -57,6 +60,9 @@
 #define ENE_EC8051_PXCFG		(0xFF14)
 #define   ENE_EC8051_PXCFG_RESET	(1 << 0)
 
+/* TODO: Caution. _BYTE_PROGRAM, _WR_DIS and WR_EN are not present for KB9012, etc.
+ * Forbidding writes
+ */
 #define SPI_CMD_BYTE_PROGRAM		0x02
 #define SPI_CMD_READ			0x03
 #define SPI_CMD_WRITE_DISABLE		0x04
@@ -64,7 +70,7 @@
 #define SPI_CMD_SECTOR_ERASE		0x20
 
 #define ENE_KB3930_HARDWARE_VERSION	0xA1
-#define SPI_FLASH_SIZE			0x10000
+#define SPI_FLASH_SIZE			0x20000	// TODO: Dynamically determine size
 #define SPI_FLASH_SECTOR_SIZE		0x1000
 #define SPI_FLASH_NUM_SECTORS		(SPI_FLASH_SIZE / SPI_FLASH_SECTOR_SIZE)
 
@@ -205,6 +211,7 @@ int main(int argc, char *argv[])
           "Alternatively, you could try running this command as root :\n"
           "   setpci -s 00:1f.0 0x84.l=00000381\n"
           "Then run this program again to see if it worked.\n");
+      exit(1);
     } else {
       printf ("This program is only meant to work and has only been tested with "
           "the KB3930 EC chip.\n"
@@ -212,8 +219,13 @@ int main(int argc, char *argv[])
           "if you continue.\n"
           "Make sure you are running this script on a Purism Librem "
           "machine only.\n");
+      printf ("\nYour EC hardware version is: 0x%02x\n", ec_idx_read (ENE_EC_HARDWARE_VERSION));
+      printf ("Your EC firmware version is: 0x%02x\n", ec_idx_read (ENE_EC_FIRMWARE_VERSION));
+      if (write == 1) {
+        printf ("Refusing to write, too dangerous\n");
+        exit(1);
+      }
     }
-    exit(1);
   }
 
   if (write == 0) {
